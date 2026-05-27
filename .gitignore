@@ -1,0 +1,9 @@
+.env
+sessions/*.json
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+src/data/pyflow.db
+*.log
