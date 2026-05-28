@@ -22,6 +22,20 @@ CREATE TABLE IF NOT EXISTS people (
     created_at TEXT DEFAULT (datetime('now', 'localtime'))
 );
 
+CREATE TABLE IF NOT EXISTS courses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dni TEXT NOT NULL,
+    fecha TEXT,
+    duracion TEXT,
+    descripcion TEXT,
+    area TEXT,
+    estado TEXT,
+    nota TEXT,
+    minimo_aprobado TEXT,
+    fecha_vencimiento TEXT,
+    created_at TEXT DEFAULT (datetime('now', 'localtime')),
+    UNIQUE(dni, descripcion, fecha)
+);
 """
 
 

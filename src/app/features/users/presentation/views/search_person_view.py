@@ -2,14 +2,12 @@ import threading
 import flet as ft
 from shared.logger import get_logger
 from app.features.users.domain import people_repository
-from app.features.users.domain.person_service import get_or_fetch_person, import_people_from_file
+from app.features.users.domain.person_service import get_or_fetch_person
 
 # Widgets refactorizados
 from app.features.users.presentation.widgets.status_banner import StatusBanner
 from app.features.users.presentation.widgets.dni_search_widget import DniSearchWidget
-from app.features.users.presentation.widgets.file_upload_widget import FileUploadWidget
 from app.features.users.presentation.widgets.people_data_table import PeopleDataTable
-
 
 logger = get_logger(__name__)
 
@@ -19,7 +17,7 @@ class SearchPersonView(ft.Column):
         self._page = page
 
         # ─── Componentes ───────────────────────────────────────────────────────
-        self._progress      = ft.ProgressBar(visible=False, height=2)
+        self._progress = ft.ProgressBar(visible=False, height=2)
         self._status_banner = StatusBanner()
 
         self._search_widget = DniSearchWidget(
@@ -27,15 +25,9 @@ class SearchPersonView(ft.Column):
             on_person_found_locally=self._on_person_found_locally,
         )
 
-        self._upload_widget = FileUploadWidget(
-            on_file_selected=self._on_file_uploaded,
-        )
-
-    
         self._data_table = PeopleDataTable(
             on_delete_click=self._show_delete_dialog,
             on_filter_change=self._load_people,
-            on_training_click=self._on_training_click,            # ← nuevo
         )
 
         # ─── Diálogo de eliminación ────────────────────────────────────────────
@@ -61,8 +53,6 @@ class SearchPersonView(ft.Column):
             vertical_alignment=ft.CrossAxisAlignment.START,
             controls=[
                 self._search_widget,
-                ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT),
-                self._upload_widget,
             ],
         )
 
@@ -87,7 +77,6 @@ class SearchPersonView(ft.Column):
     def _set_loading(self, loading: bool, message: str = "") -> None:
         self._progress.visible = loading
         self._search_widget.set_disabled(loading)
-        self._upload_widget.set_disabled(loading)
         if message:
             self._show_status(message)
         elif not loading:
@@ -125,39 +114,6 @@ class SearchPersonView(ft.Column):
                 self._set_loading(False)
 
         threading.Thread(target=task, daemon=True).start()
-
-    # ─── Callbacks de archivo ──────────────────────────────────────────────────
-
-    def _on_file_uploaded(self, file_path: str) -> None:
-        self._set_loading(True, "Procesando archivo e importando a HSEC...")
-
-        def task() -> None:
-            try:
-                def progress_cb(current: int, total: int, dni_act: str) -> None:
-                    self._show_status(f"Procesando {current}/{total} — DNI {dni_act}")
-
-                result = import_people_from_file(file_path, progress_callback=progress_cb)
-                if result["total"] == 0:
-                    self._show_status("No se encontraron DNIs válidos en el archivo.", is_error=True)
-                else:
-                    self._show_status(
-                        f"Completado: {result['added']} nuevos, {result['already_exists']} existentes, {result['not_found']} no encontrados.",
-                        is_success=True,
-                    )
-                self._load_people()
-            except Exception as ex:
-                logger.exception("Error en carga masiva")
-                self._show_status(f"Error: {ex}", is_error=True)
-            finally:
-                self._set_loading(False)
-
-        threading.Thread(target=task, daemon=True).start()
-
-    # ─── Callbacks de capacitaciones ──────────────────────────────────────────
-
-    def _on_training_click(self, cod_persona: str, nombre_completo: str) -> None:
-        """Abre el BottomSheet con los cursos de la persona seleccionada."""
-        self._training_dialog.show(cod_persona, nombre_completo)
 
     # ─── Callbacks de eliminación y filtrado ───────────────────────────────────
 

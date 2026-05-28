@@ -54,6 +54,7 @@ NAV_SECTIONS: list[NavSection] = [
                 items=[
                     NavItem("searchPerson", "Buscar", "person_search"),
                     NavItem("importPerson", "Importar", "file_upload_outlined"),
+                    NavItem("syncCourses", "Sincronizar Cursos", "sync_alt"),
                 ],
             ),
         ],

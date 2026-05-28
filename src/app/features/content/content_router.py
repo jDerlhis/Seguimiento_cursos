@@ -16,6 +16,9 @@ def build_content(item_key: str, page: ft.Page) -> ft.Control:
         return SearchPersonView(page)
     elif item_key == IMPORT_PERSON_KEY:
         return ImportPersonView(page)
+    elif item_key == "syncCourses":
+        from app.features.users.presentation.views.sync_courses_view import SyncCoursesView
+        return SyncCoursesView(page)
 
     return ft.Container(
         expand=True,
