@@ -1,33 +1,21 @@
 from functools import lru_cache
 
-from data import schema
-from infra.config.settings import PY_SUPABASE_TENANT_ID, PY_SUPABASE_TENANT_SLUG
-from infra.supabase.client import get_client
+from infra.config.settings import PY_SUPABASE_TENANT_SLUG
+from infra.supabase.tenant_resolve import resolve_tenant_id_by_slug
 
 
 @lru_cache(maxsize=1)
 def get_tenant_id() -> str:
-    if PY_SUPABASE_TENANT_ID:
-        return PY_SUPABASE_TENANT_ID
-
     slug = PY_SUPABASE_TENANT_SLUG
     if not slug:
         raise RuntimeError(
             "Configura PY_SUPABASE_TENANT_ID o PY_SUPABASE_TENANT_SLUG en .env"
         )
 
-    response = (
-        get_client()
-        .table(schema.TENANTS)
-        .select("id")
-        .eq("slug", slug)
-        .limit(1)
-        .execute()
-    )
-    rows = response.data or []
-    if not rows:
+    tenant_id = resolve_tenant_id_by_slug(slug)
+    if not tenant_id:
         raise RuntimeError(
             f"No existe tenant con slug '{slug}'. "
-            "Aplica las migraciones de Supabase o define PY_SUPABASE_TENANT_ID."
+            "Aplica las migraciones de Supabase o define PY_SUPABASE_TENANT_ID en .env."
         )
-    return rows[0]["id"]
+    return tenant_id

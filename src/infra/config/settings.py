@@ -40,3 +40,8 @@ PY_SUPABASE_PUBLISHABLE_KEY = os.getenv("PY_SUPABASE_PUBLISHABLE_KEY", "").strip
 PY_SUPABASE_SERVICE_ROLE_KEY = os.getenv("PY_SUPABASE_SERVICE_ROLE_KEY", "").strip()
 PY_SUPABASE_TENANT_ID = os.getenv("PY_SUPABASE_TENANT_ID", "").strip()
 PY_SUPABASE_TENANT_SLUG = os.getenv("PY_SUPABASE_TENANT_SLUG", "pyflow-desktop").strip()
+
+# Sin confirmación por enlace: confirma correos vía Admin API (requiere service role).
+PY_SUPABASE_AUTO_CONFIRM_EMAIL = os.getenv(
+    "PY_SUPABASE_AUTO_CONFIRM_EMAIL", "true"
+).lower() in ("1", "true", "yes")

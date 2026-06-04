@@ -1,6 +1,17 @@
-# Flet Development Standards (v0.85.1 Compatibility)
+# Flet Development Standards (v0.85.2 Compatibility)
 
-This document outlines the specific syntax requirements and architectural constraints identified for the Flet environment in this project. Adhering to these standards ensures cross-version stability and prevents runtime `AttributeError` and `TypeError` exceptions.
+This document outlines the specific syntax requirements and architectural constraints identified for the Flet environment in this project (verified with **flet 0.85.2**). Adhering to these standards prevents runtime `AttributeError`, `TypeError`, and msgpack serialization failures.
+
+## Quick reference (errores frecuentes)
+
+| Síntoma | Causa | Usar en su lugar |
+|--------|--------|------------------|
+| `padding` has no attribute `symmetric` | `ft.padding` es un submódulo, no la clase | `ft.Padding.symmetric(horizontal=12, vertical=10)` |
+| `alignment` has no attribute `center` | `ft.alignment` es un submódulo | `ft.Alignment(0, 0)` |
+| `Tab.__init__() got unexpected keyword 'text'` | API antigua | `ft.Tab(label="...")` |
+| `Tabs.__init__() got unexpected keyword 'tabs'` | Constructor cambió en 0.85 | Ver §4 Tabs / preferir `SegmentedButton` |
+| `can not serialize 'set' object` | msgpack no serializa `set` | `selected=["login"]` (lista), nunca `{"login"}` |
+| `SURFACE_VARIANT` AttributeError | Constante inexistente en `ft.Colors` | `SURFACE_CONTAINER` o `ON_SURFACE_VARIANT` (texto) |
 
 ## 1. Alignment and Positioning
 Always use **UPPERCASE** constants for alignment and positioning. Lowercase attributes are deprecated or unsupported in this build.
@@ -9,13 +20,17 @@ Always use **UPPERCASE** constants for alignment and positioning. Lowercase attr
 *   **Incorrect**: `ft.MainAxisAlignment.center`, `ft.CrossAxisAlignment.start`.
 
 ## 2. Style and Layout Objects
-Instantiate style objects using their class constructors. Avoid using lowercase helper modules (like `ft.padding.only`) as they may be missing.
+Instantiate style objects using the **class** on the root module (`ft.Padding`, `ft.Alignment`, `ft.Border`). The lowercase submodules (`ft.padding`, `ft.alignment`) exist but **no exponen** helpers como `.symmetric` o `.center`.
 
 ### Padding
-Use the `ft.Padding` class with explicit side arguments.
 ```python
-# Correct
+# Correct — clase ft.Padding
 padding = ft.Padding(left=10, top=5, right=10, bottom=5)
+padding = ft.Padding.symmetric(horizontal=12, vertical=10)
+padding = ft.Padding.only(left=16)
+
+# Incorrect — submódulo ft.padding
+padding = ft.padding.symmetric(horizontal=12, vertical=10)  # AttributeError
 ```
 
 ### Border
@@ -37,10 +52,13 @@ border_radius = ft.BorderRadius.all(10)
 ```
 
 ## 3. Alignment Property
-For the `alignment` property in containers, use the `ft.Alignment` object instead of helper attributes.
+For the `alignment` property in `ft.Container`, use `ft.Alignment(x, y)` (valores -1.0 … 1.0). Do not use `ft.alignment.center`.
 ```python
-# Correct
-alignment = ft.Alignment(0, 0) # Centered
+# Correct — centrado
+alignment = ft.Alignment(0, 0)
+
+# Incorrect
+alignment = ft.alignment.center  # AttributeError
 ```
 
 ## 4. Component Specifics
@@ -51,10 +69,29 @@ Use the `label` property instead of `text`.
 *   **Incorrect**: `ft.Tab(text="My Tab")`
 
 ### ft.Tabs
-The constructor might be unstable. Prefer creating the object first and then assigning the list to the `.tabs` property.
+En **0.85.2** el constructor de `ft.Tabs` ya no acepta `tabs=[...]` en `__init__` y puede exigir argumentos distintos (`content`, `length`, etc.). Para un conmutador de dos modos (login / registro), preferir **`ft.SegmentedButton`** (patrón usado en `sign_in_view.py`).
+
+Si usas `ft.Tabs`, crea el control y asigna pestañas después:
 ```python
-tabs = ft.Tabs(selected_index=0)
-tabs.tabs = [ft.Tab(label="Tab 1")]
+tabs = ft.Tabs(selected_index=0, on_change=handler)
+tabs.tabs = [ft.Tab(label="Tab 1"), ft.Tab(label="Tab 2")]
+```
+
+### ft.SegmentedButton
+La propiedad `selected` debe ser una **lista de strings** serializable por msgpack. Flet puede devolver un `set` en eventos; convierte con `list(e.control.selected)` al leer, pero **nunca** pases un `set` al crear o actualizar el control.
+```python
+# Correct
+ft.SegmentedButton(
+    selected=["login"],
+    segments=[
+        ft.Segment(value="login", label=ft.Text("Iniciar sesión")),
+        ft.Segment(value="register", label=ft.Text("Registrarse")),
+    ],
+    on_change=self._on_mode_change,
+)
+
+# Incorrect — TypeError al hacer page.update()
+ft.SegmentedButton(selected={"login"}, ...)
 ```
 
 ### ft.PopupMenuItem
@@ -150,7 +187,7 @@ container = ft.Container(
 > ft.Padding(left=12, top=10, right=12, bottom=10)  # Correct
 > ft.Padding(12, 10, 12, 10)  # Risky — positional order may differ
 > ```
-> `ft.Padding.symmetric(vertical=..., horizontal=...)` and `ft.Padding.only(left=...)` are alternative constructors available in v0.85.
+> Usa **`ft.Padding.symmetric(...)`** y **`ft.Padding.only(...)`** en la clase `ft.Padding`, no en el submódulo `ft.padding` (ver §2).
 
 ## 10. ft.Icon — name property reassignment
 

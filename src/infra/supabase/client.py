@@ -10,12 +10,12 @@ from infra.config.settings import (
 
 
 def _api_key() -> str:
-    if PY_SUPABASE_SERVICE_ROLE_KEY:
-        return PY_SUPABASE_SERVICE_ROLE_KEY
     if PY_SUPABASE_PUBLISHABLE_KEY:
         return PY_SUPABASE_PUBLISHABLE_KEY
+    if PY_SUPABASE_SERVICE_ROLE_KEY:
+        return PY_SUPABASE_SERVICE_ROLE_KEY
     raise RuntimeError(
-        "Configura PY_SUPABASE_PUBLISHABLE_KEY o PY_SUPABASE_SERVICE_ROLE_KEY en .env"
+        "Configura PY_SUPABASE_PUBLISHABLE_KEY (o PY_SUPABASE_SERVICE_ROLE_KEY) en .env"
     )
 
 
@@ -32,3 +32,6 @@ def get_client() -> Client:
 
 def reset_client_cache() -> None:
     get_client.cache_clear()
+    from infra.supabase.public_client import reset_public_client_cache
+
+    reset_public_client_cache()

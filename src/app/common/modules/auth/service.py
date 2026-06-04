@@ -1,4 +1,10 @@
 from data.entities.auth_user import AuthUser
+from app.common.modules.auth.email_confirm import (
+    auto_confirm_enabled,
+    confirm_user_by_email,
+    confirm_user_by_id,
+    is_email_not_confirmed_error,
+)
 from app.common.modules.auth.types import AuthError, EmailCredentials
 from infra.supabase.client import get_client, reset_client_cache
 from infra.supabase.session import (
@@ -19,20 +25,57 @@ def _map_auth_exception(exc: Exception) -> AuthError:
     code = getattr(exc, "code", None)
     if hasattr(exc, "message") and exc.message:
         msg = str(exc.message)
+
+    lower = msg.lower()
+    if is_email_not_confirmed_error(exc):
+        if auto_confirm_enabled():
+            msg = "No se pudo confirmar el correo automáticamente. Reintenta iniciar sesión."
+        else:
+            msg = (
+                "Debes confirmar el correo antes de iniciar sesión. "
+                "Añade PY_SUPABASE_SERVICE_ROLE_KEY en .env o desactiva "
+                "'Confirm email' en Supabase → Authentication."
+            )
+        code = "email_not_confirmed"
+    elif "invalid format" in lower or "unable to validate email" in lower:
+        msg = "El formato del correo no es válido."
+        code = "invalid_email"
+    elif "already registered" in lower or "user already exists" in lower:
+        msg = "Ese correo ya está registrado. Usa «Iniciar sesión»."
+        code = "user_already_registered"
+
     return AuthError(message=msg or "Error de autenticación", code=code)
 
 
-def sign_in_with_password(credentials: EmailCredentials) -> AuthUser:
+def _sign_in_with_password_raw(email: str, password: str):
+    client = get_client()
+    return client.auth.sign_in_with_password(
+        {"email": email, "password": password}
+    )
+
+
+def sign_in_with_password(
+    credentials: EmailCredentials,
+    *,
+    _allow_confirm_retry: bool = True,
+) -> AuthUser:
     email = _normalize_email(credentials.email)
     if not email or not credentials.password:
         raise AuthError("Email y contraseña son obligatorios.")
 
-    client = get_client()
     try:
-        response = client.auth.sign_in_with_password(
-            {"email": email, "password": credentials.password}
-        )
+        response = _sign_in_with_password_raw(email, credentials.password)
     except Exception as ex:
+        if (
+            _allow_confirm_retry
+            and auto_confirm_enabled()
+            and is_email_not_confirmed_error(ex)
+        ):
+            if confirm_user_by_email(email):
+                return sign_in_with_password(
+                    credentials,
+                    _allow_confirm_retry=False,
+                )
         logger.warning("sign_in falló: %s", ex)
         raise _map_auth_exception(ex) from ex
 
@@ -40,7 +83,7 @@ def sign_in_with_password(credentials: EmailCredentials) -> AuthUser:
     if not user:
         raise AuthError("No se recibió usuario tras el inicio de sesión.")
 
-    persist_session_from_client(client)
+    persist_session_from_client(get_client())
     return user
 
 
@@ -66,13 +109,20 @@ def sign_up_with_password(credentials: EmailCredentials) -> AuthUser:
 
     if response.session:
         persist_session_from_client(client)
-    else:
-        raise AuthError(
-            "Cuenta creada. Revisa tu correo para confirmar el registro antes de iniciar sesión.",
-            code="email_confirmation_required",
-        )
+        return user
 
-    return user
+    if auto_confirm_enabled() and user.id:
+        try:
+            confirm_user_by_id(user.id)
+            return sign_in_with_password(credentials, _allow_confirm_retry=False)
+        except Exception as ex:
+            logger.warning("Auto-confirmación tras registro falló: %s", ex)
+
+    raise AuthError(
+        "Cuenta creada pero no hay sesión. Configura PY_SUPABASE_SERVICE_ROLE_KEY "
+        "o desactiva la confirmación de correo en Supabase.",
+        code="email_confirmation_required",
+    )
 
 
 def sign_out() -> None:

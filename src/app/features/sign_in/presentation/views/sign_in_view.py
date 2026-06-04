@@ -35,7 +35,7 @@ class SignInView(ft.Container):
         )
 
         self._success_text_inner = ft.Text(
-            "", size=13, color=ft.Colors.ON_TERTIARY_CONTAINER, expand=True
+            "", size=13, color=ft.Colors.GREEN_900, expand=True
         )
         self._success_banner = ft.Container(
             content=ft.Row(
@@ -43,7 +43,7 @@ class SignInView(ft.Container):
                     ft.Icon(
                         ft.Icons.CHECK_CIRCLE_OUTLINE_ROUNDED,
                         size=16,
-                        color=ft.Colors.ON_TERTIARY_CONTAINER,
+                        color=ft.Colors.GREEN_900,
                     ),
                     self._success_text_inner,
                 ],
@@ -52,7 +52,8 @@ class SignInView(ft.Container):
             ),
             padding=ft.Padding.symmetric(horizontal=12, vertical=10),
             border_radius=10,
-            bgcolor=ft.Colors.TERTIARY_CONTAINER,
+            bgcolor=ft.Colors.GREEN_100,
+            border=ft.Border.all(1, ft.Colors.GREEN_700),
             visible=False,
         )
 
@@ -91,7 +92,7 @@ class SignInView(ft.Container):
         )
 
         self._mode_switch = ft.SegmentedButton(
-            selected={"login"},
+            selected=["login"],
             on_change=self._on_mode_change,
             expand_loose=True,
             segments=[

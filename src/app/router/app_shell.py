@@ -13,9 +13,9 @@ from app.common.modules.sidebar.navigation import (
 
 def _build_content(item_key: str, page: ft.Page) -> ft.Control:
     if item_key == "hsec":
-        from app.features.hsec.hsec_view import HsecView
+        from app.features.hsec.hsec_view import build_hsec_view
 
-        return HsecView(page)
+        return build_hsec_view(page)
 
     item_title = "Inicio"
     for section in NAV_SECTIONS:

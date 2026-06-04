@@ -43,30 +43,6 @@ NAV_SECTIONS: list[NavSection] = [
         ],
     ),
     NavSection(
-        id="data",
-        label="Datos",
-        icon="storage_outlined",
-        selected_icon="storage",
-        menus=[
-            NavMenu(
-                title="Fuentes",
-                icon="cloud_outlined",
-                items=[
-                    NavItem("hsec", "HSEC Web", "language"),
-                    NavItem("connections", "Conexiones", "cable"),
-                ],
-            ),
-            NavMenu(
-                title="Transformación",
-                icon="transform",
-                items=[
-                    NavItem("pipelines", "Pipelines", "account_tree_outlined"),
-                    NavItem("jobs", "Jobs", "pending_actions"),
-                ],
-            ),
-        ],
-    ),
-    NavSection(
         id="settings",
         label="Ajustes",
         icon="settings_outlined",
