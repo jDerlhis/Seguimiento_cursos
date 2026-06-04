@@ -43,23 +43,6 @@ NAV_SECTIONS: list[NavSection] = [
         ],
     ),
     NavSection(
-        id="Usuarios",
-        label="Usuarios",
-        icon="people_outlined",
-        selected_icon="people",
-        menus=[
-            NavMenu(
-                title="Personas",
-                icon="badge_outlined",
-                items=[
-                    NavItem("searchPerson", "Buscar", "person_search"),
-                    NavItem("importPerson", "Importar", "file_upload_outlined"),
-                    NavItem("syncCourses", "Sincronizar Cursos", "sync_alt"),
-                ],
-            ),
-        ],
-    ),
-    NavSection(
         id="data",
         label="Datos",
         icon="storage_outlined",

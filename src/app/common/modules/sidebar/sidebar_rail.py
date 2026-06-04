@@ -11,10 +11,12 @@ class SidebarRail(ft.Container):
         on_section_change,
         active_section_id: str,
         on_toggle_menu=None,
+        on_logout=None,
     ):
         self._on_section_change = on_section_change
         self._active_section_id = active_section_id
         self._on_toggle_menu = on_toggle_menu
+        self._on_logout = on_logout
         self._buttons: dict[str, ft.IconButton] = {}
         self._toggle_btn: ft.IconButton | None = None
 
@@ -65,11 +67,29 @@ class SidebarRail(ft.Container):
                 ft.Container(expand=True),
                 ft.Container(
                     alignment=ft.Alignment.CENTER,
+                    content=self._build_logout_button(),
+                ),
+                ft.Container(
+                    alignment=ft.Alignment.CENTER,
                     content=self._build_toggle_button(),
                 ),
             ],
             spacing=4,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+    def _build_logout_button(self) -> ft.IconButton:
+        def on_click(_e: ft.ControlEvent) -> None:
+            if self._on_logout:
+                self._on_logout()
+
+        return ft.IconButton(
+            icon=ft.Icons.LOGOUT,
+            icon_size=20,
+            tooltip="Cerrar sesión",
+            icon_color=ft.Colors.ERROR,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12)),
+            on_click=on_click,
         )
 
     def _build_toggle_button(self) -> ft.IconButton:

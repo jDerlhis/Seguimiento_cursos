@@ -2,7 +2,6 @@ import flet as ft
 
 from shared import theme
 
-from app.features.content.content_router import build_content
 from app.common.modules.sidebar.sidebar_menu import SidebarMenu
 from app.common.modules.sidebar.sidebar_rail import SidebarRail
 from app.common.modules.sidebar.navigation import (
@@ -10,6 +9,34 @@ from app.common.modules.sidebar.navigation import (
     DEFAULT_SECTION_ID,
     NAV_SECTIONS,
 )
+
+
+def _build_content(item_key: str, page: ft.Page) -> ft.Control:
+    if item_key == "hsec":
+        from app.features.hsec.hsec_view import HsecView
+
+        return HsecView(page)
+
+    item_title = "Inicio"
+    for section in NAV_SECTIONS:
+        for menu in section.menus:
+            for item in menu.items:
+                if item.key == item_key:
+                    item_title = item.title
+                    break
+
+    return ft.Column(
+        expand=True,
+        spacing=8,
+        controls=[
+            ft.Text(item_title, size=20, weight=ft.FontWeight.W_600),
+            ft.Text(
+                "Contenido en desarrollo.",
+                size=14,
+                color=ft.Colors.ON_SURFACE_VARIANT,
+            ),
+        ],
+    )
 
 
 def _find_item_title(section_id: str, item_key: str) -> tuple[str, str]:
@@ -24,8 +51,9 @@ def _find_item_title(section_id: str, item_key: str) -> tuple[str, str]:
 
 
 class AppShell(ft.Row):
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, on_logout=None):
         self._page = page
+        self._on_logout = on_logout
         self._active_section_id = DEFAULT_SECTION_ID
         self._active_item_key = DEFAULT_ITEM_KEY
 
@@ -33,12 +61,14 @@ class AppShell(ft.Row):
             on_section_change=self._on_section_change,
             active_section_id=self._active_section_id,
             on_toggle_menu=self._on_toggle_menu,
+            on_logout=self._handle_logout,
         )
         self._menu = SidebarMenu(
             section_id=self._active_section_id,
             active_item_key=self._active_item_key,
             on_item_select=self._on_item_select,
             on_toggle=self._rail.update_toggle_icon,
+            on_logout=self._handle_logout,
         )
         self._content_title = ft.Text(size=28, weight=ft.FontWeight.W_600)
         self._content_subtitle = ft.Text(size=14, color=ft.Colors.ON_SURFACE_VARIANT)
@@ -80,7 +110,8 @@ class AppShell(ft.Row):
         self._render_content()
 
     def _render_content(self) -> None:
-        self._content_body.content = build_content(self._active_item_key, self._page)
+        self._content_body.content = _build_content(self._active_item_key, self._page)
+        self._refresh_content_header()
 
     def _refresh_content_header(self) -> None:
         section_label, item_title = _find_item_title(
@@ -123,6 +154,13 @@ class AppShell(ft.Row):
     def _on_toggle_menu(self) -> None:
         self._menu.toggle_collapse()
 
+    def _handle_logout(self) -> None:
+        from app.features.sign_in.domain import auth_service
 
-def build_shell(page: ft.Page) -> AppShell:
-    return AppShell(page)
+        auth_service.logout()
+        if self._on_logout:
+            self._on_logout()
+
+
+def build_shell(page: ft.Page, on_logout=None) -> AppShell:
+    return AppShell(page, on_logout=on_logout)

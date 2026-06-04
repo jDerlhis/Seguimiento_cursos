@@ -1,7 +1,10 @@
+from typing import Callable
+
 import flet as ft
 
 import shared.theme as theme
 from app.common.modules.sidebar.navigation import NAV_SECTIONS, NavMenu, NavSection
+from app.features.sign_in.domain import auth_service
 
 
 class SidebarMenu(ft.Container):
@@ -16,12 +19,14 @@ class SidebarMenu(ft.Container):
         section_id: str,
         active_item_key: str,
         on_item_select,
-        on_toggle: callable = None,
+        on_toggle: Callable[[bool], None] | None = None,
+        on_logout: Callable[[], None] | None = None,
     ):
         self._section_id = section_id
         self._active_item_key = active_item_key
         self._on_item_select = on_item_select
         self._on_toggle = on_toggle
+        self._on_logout = on_logout
         self._section = self._find_section(section_id)
         self._collapsed = False
 
@@ -131,6 +136,23 @@ class SidebarMenu(ft.Container):
             on_click=on_click,
         )
 
+    def _build_logout_tile(self) -> ft.ListTile:
+        user = auth_service.current_user()
+        subtitle = user.email if user and user.email else None
+
+        def on_click(_e: ft.ControlEvent) -> None:
+            if self._on_logout:
+                self._on_logout()
+
+        return ft.ListTile(
+            title=ft.Text("Cerrar sesión", size=13, color=ft.Colors.ERROR),
+            subtitle=ft.Text(subtitle, size=11) if subtitle else None,
+            leading=ft.Icon(ft.Icons.LOGOUT, size=18, color=ft.Colors.ERROR),
+            dense=True,
+            shape=ft.RoundedRectangleBorder(radius=8),
+            on_click=on_click,
+        )
+
     def _build_content(self) -> ft.Control:
         self._divider = ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT)
         self._menu_container = ft.Container(
@@ -142,6 +164,8 @@ class SidebarMenu(ft.Container):
                 self._header,
                 self._divider,
                 self._menu_container,
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT),
+                self._build_logout_tile(),
             ],
             spacing=0,
             expand=True,
