@@ -43,6 +43,22 @@ NAV_SECTIONS: list[NavSection] = [
         ],
     ),
     NavSection(
+        id="data",
+        label="Datos",
+        icon="storage_outlined",
+        selected_icon="storage",
+        menus=[
+            NavMenu(
+                title="HSEC",
+                icon="language",
+                items=[
+                    NavItem("hsec", "Conexión", "link"),
+                    NavItem("hsec_sync", "Sincronización", "sync"),
+                ],
+            ),
+        ],
+    ),
+    NavSection(
         id="settings",
         label="Ajustes",
         icon="settings_outlined",

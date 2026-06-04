@@ -17,6 +17,11 @@ def _build_content(item_key: str, page: ft.Page) -> ft.Control:
 
         return build_hsec_view(page)
 
+    if item_key == "hsec_sync":
+        from app.features.hsec.presentation.views.hsec_sync_view import build_hsec_sync_view
+
+        return build_hsec_sync_view(page)
+
     item_title = "Inicio"
     for section in NAV_SECTIONS:
         for menu in section.menus:
